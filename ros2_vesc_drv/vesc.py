@@ -17,9 +17,12 @@ import rclpy
 import struct
 import binascii
 import serial
-from rclpy.node import Node, MsgType
-from typing import Final, Union
+from rclpy.executors import MultiThreadedExecutor
+from rclpy.node import Node
+from typing import Final, Union, TypeVar
 from std_msgs.msg import Float32
+
+MsgType = TypeVar("MsgType")
 
 
 CAN_ADDR_R: Final = 1
@@ -80,11 +83,11 @@ class VESCDiffDriver(Node):
         if diff_R > 0.1:
             self.duty_right = 0.0
 
-    def set_duty_left(self, msg: Union[~MsgType, bytes]):
+    def set_duty_left(self, msg: Union[MsgType, bytes]):
         self.duty_left = msg.data
         self.last_stamp_L = self.get_clock().now()
 
-    def set_duty_right(self, msg: Union[~MsgType, bytes]):
+    def set_duty_right(self, msg: Union[MsgType, bytes]):
         self.duty_right = msg.data
         self.last_stamp_R = self.get_clock().now()
 
@@ -102,7 +105,7 @@ class VESCDiffDriver(Node):
 def main(args=None):
     rclpy.init(args=args)
     try:
-        executor = rclpy.MultiThreadedExecutor(num_threads=4)
+        executor = MultiThreadedExecutor(num_threads=4)
         vesc_diff_drv = VESCDiffDriver()
         executor.add_node(vesc_diff_drv)
         try:

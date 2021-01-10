@@ -22,6 +22,6 @@ setup(
     license="Apache License 2.0",
     tests_require=["pytest"],
     entry_points={
-        "console_scripts": [],
+        "console_scripts": ["vesc_diff_drv=ros2_vesc_drv.vesc:main"],
     },
 )
