@@ -29,7 +29,7 @@ ros2 run ros2_vesc_drv vesc_diff_drv
 The node expects Float64 (signed) demands to come through the following topics:
 
 - `/vesv_L/duty` for the left drive
-- `/vesc_R/dut` for the right drive
+- `/vesc_R/duty` for the right drive
 
 to test the thing you may start up the node and in a separate terminal feed it with some Float64 values like so:
 
