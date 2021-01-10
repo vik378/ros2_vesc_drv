@@ -1,0 +1,20 @@
+{
+    "name": "Ubuntu",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "args": {
+            "VARIANT": "bionic"
+        }
+    },
+    "runArgs": [
+        "--net",
+        "host",
+        "--device=/dev/ttyACM0"
+    ],
+    "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "deitry.colcon-helper"
+    ],
+    "remoteUser": "vscode"
+}
