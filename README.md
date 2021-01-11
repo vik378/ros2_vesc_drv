@@ -26,12 +26,12 @@ ros2 run ros2_vesc_drv vesc_diff_drv
 
 ## Usage
 
-The node expects Float64 (signed) demands to come through the following topics:
+The node expects Float32 (signed) demands to come through the following topics:
 
 - `/vesv_L/duty` for the left drive
 - `/vesc_R/duty` for the right drive
 
-to test the thing you may start up the node and in a separate terminal feed it with some Float64 values like so:
+to test the thing you may start up the node and in a separate terminal feed it with some Float32 values like so:
 
 ```bash
 ros2 topic pub --rate 10 /vesc_R/duty std_msgs/msg/Float32 data:\ 0.05\
