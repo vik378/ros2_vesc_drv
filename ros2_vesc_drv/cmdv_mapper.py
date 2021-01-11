@@ -13,7 +13,8 @@
 #    limitations under the License.
 
 
-from typing import Final
+import math
+from typing import Final, Tuple
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
@@ -23,6 +24,31 @@ from std_msgs.msg import Float32
 TOPIC_CMD_VEL: Final = "/cmd_vel"
 TOPIC_VESC_LEFT: Final = "/vesc_L/duty"
 TOPIC_VESC_RIGHT: Final = "/vesc_R/duty"
+
+
+def diamond_steer(x: float, y: float) -> Tuple[float, float]:
+    """Implements diamond steering
+    (as per https://electronics.stackexchange.com/a/293108)"""
+    # convert to polar
+    r = math.hypot(x, y)
+    t = math.atan2(y, x)
+
+    # rotate by 45 degrees
+    t += math.pi / 4
+
+    # back to cartesian
+    left = r * math.cos(t)
+    right = r * math.sin(t)
+
+    # rescale the new coords
+    left = left * math.sqrt(2)
+    right = right * math.sqrt(2)
+
+    # clamp to -1/+1
+    left = max(-1, min(left, 1))
+    right = max(-1, min(right, 1))
+
+    return float(left), float(right)
 
 
 class BasicRemapper(Node):
@@ -36,12 +62,11 @@ class BasicRemapper(Node):
         self.subs_cmdv
 
     def remap_cmd_vel(self, msg: Twist):
-        duty_l = msg.linear.x
-        duty_r = msg.angular.z
+        left, right = diamond_steer(msg.linear.x, msg.angular.z)
         msg = Float32()
-        msg.data = duty_l
+        msg.data = left
         self.pub_vesc_l.publish(msg)
-        msg.data = duty_r
+        msg.data = right
         self.pub_vesc_r.publish(msg)
 
 
