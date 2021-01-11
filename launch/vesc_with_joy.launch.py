@@ -18,6 +18,8 @@ def generate_launch_description():
                     {"axis_angular": 2},
                     {"axis_linear": {"x": 3}},
                     {"require_enable_button": False},
+                    {"scale_linear": {"x": 0.1}},
+                    {"scale_angular": {"yaw": 0.1}},
                 ],
             ),
             Node(
