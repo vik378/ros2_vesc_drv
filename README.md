@@ -36,3 +36,15 @@ to test the thing you may start up the node and in a separate terminal feed it w
 ```bash
 ros2 topic pub --rate 10 /vesc_R/duty std_msgs/msg/Float32 data:\ 0.05\
 ```
+
+There is also a launch file that allows for teleoperation using joystick / cmd_vel topic. It implements the graph below:
+
+![vesc_with_joy ROS2 nodes graph](docs/vesc_with_joy.png)
+
+The launch fila has some parameters tuned for my platform (like speed limits) so you may need to tune those things a bit.
+
+The thing may be started with the following command:
+
+```bash
+ros2 launch ros2_vesc_drv vesc_with_joy.launch.py
+```
