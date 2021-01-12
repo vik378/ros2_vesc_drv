@@ -56,7 +56,7 @@ To build the container with this package you may run `docker build -t ros2_vesc_
 To run the package with /cmd_vel interpreter (diamond steering mixer) use the below:
 
 ```bash
-docker run -it --device=/dev/ttyACM0 ros2_vesc_drv:latest ros2 launch ros2_vesc_drv vesc_cmd_vel.launch.py
+docker run -it --net=host --pid=host --device=/dev/ttyACM0 ros2_vesc_drv:latest ros2 launch ros2_vesc_drv vesc_cmd_vel.launch.py
 ```
 
 You may feed it with some /cmd_vel with Message Publisher (rqt) or joystick from your host PC
