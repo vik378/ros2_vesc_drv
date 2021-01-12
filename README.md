@@ -59,4 +59,9 @@ To run the package with /cmd_vel interpreter (diamond steering mixer) use the be
 docker run -it --net=host --pid=host --device=/dev/ttyACM0 ros2_vesc_drv:latest ros2 launch ros2_vesc_drv vesc_cmd_vel.launch.py
 ```
 
-You may feed it with some /cmd_vel with Message Publisher (rqt) or joystick from your host PC
+You may feed it with some /cmd_vel with Message Publisher (rqt) or joystick from your host PC, there is a launch file for that too :-)
+
+```bash
+# below thing will turn joystic inputs into a /cmd_vel topic / messages
+ros2 launch ros2_vesc_drv joy_teleop.launch.py
+```
