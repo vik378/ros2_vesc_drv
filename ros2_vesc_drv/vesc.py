@@ -39,22 +39,47 @@ CONTROL_MODES: Final = frozenset(["duty", "speed", "position"])
 DEFAULT_CONTROL_MODE: Final = "duty"
 
 
-COMM_SET_DUTY: Final = b"\x06"
+COMM_SET_DUTY: Final = b"\x06"  # expects an int32 of float * 10e3
+COMM_SET_SPEED: Final = b"\x09"  # expects an int32 of float, RPM
+COMM_SET_POS: Final = b"\x0a"  # expects an int32 of float * 1e6
 COMM_FORWARD_CAN: Final = b"\x22"
 
 
-class SetDutyMsg:
-    def __init__(self, val: float, can_addr: int = -1):
+class SetCommandMsg:
+    def __init__(self, val: float, can_addr: int = -1, control_mode="duty"):
         self.val = val
         self.can_addr = can_addr
+        self.control_mode = str(control_mode)
 
     @property
-    def as_bytes(self):
-        payload = COMM_SET_DUTY + struct.pack(">i", int(self.val * 10000))
+    def payload_cmd(self):
+        cmd, value = None, None
+        if self.control_mode == "duty":
+            cmd = COMM_SET_DUTY
+            value = int(self.val * 10000)
+        elif self.control_mode == "speed":
+            cmd = COMM_SET_SPEED
+            value = int(self.val)  # rpm, may need a scaler / multiplier for that
+        elif self.control_mode == "position":
+            cmd = COMM_SET_POS
+            value = int(self.val * 1000000)
+        else:
+            raise NotImplementedError(
+                f"Unimplemented control mode: {self.control_mode}"
+            )
+        return cmd + struct.pack(">i", value)
+
+    @property
+    def can_fwd_cmd(self):
         if self.can_addr > -1:
             if self.can_addr > 127:
                 raise ValueError("CAN ID > 127 is not supported at the moment")
-            payload = COMM_FORWARD_CAN + self.can_addr.to_bytes(1, "big") + payload
+            return COMM_FORWARD_CAN + self.can_addr.to_bytes(1, "big")
+        return b""
+
+    @property
+    def as_bytes(self):
+        payload = self.can_fwd_cmd + self.payload_cmd
         crc = binascii.crc_hqx(payload, 0).to_bytes(2, "big")
         return b"\x02" + len(payload).to_bytes(1, "big") + payload + crc + b"\x03"
 
@@ -65,6 +90,7 @@ class VESCDiffDriver(Node):
         self.duty_left = 0.0
         self.duty_right = 0.0
         self.ser = None
+        self.control_mode = None
         self.declare_parameter("serial_port", DEFAULT_SERIAL_ADDR)
         self.declare_parameter("control_mode", DEFAULT_CONTROL_MODE)
         self.bind_serial_port(self.get_parameter("serial_port").value)
@@ -91,10 +117,13 @@ class VESCDiffDriver(Node):
         return SetParametersResult(successful=True)
 
     def set_control_mode(self, control_mode: str):
-        if control_mode not in CONTROL_MODES:
-            self.get_logger().warn(
+        if str(control_mode) not in CONTROL_MODES:
+            self.get_logger().warning(
                 f"Requested control mode is not supported, pick from {CONTROL_MODES}"
             )
+        else:
+            self.control_mode = control_mode
+            self.get_logger().info(f"Changed control mode to {control_mode}")
 
     def bind_serial_port(self, path_to_port: str):
         if hasattr(self, "ser") and isinstance(self.ser, serial.Serial):
@@ -131,8 +160,12 @@ class VESCDiffDriver(Node):
 
     def update_vesc_demands(self):
         self.check_last_update()
-        demand_L = SetDutyMsg(self.duty_left, can_addr=CAN_ADDR_L)
-        demand_R = SetDutyMsg(self.duty_right, can_addr=CAN_ADDR_R)
+        demand_L = SetCommandMsg(
+            self.duty_left, can_addr=CAN_ADDR_L, control_mode=self.control_mode
+        )
+        demand_R = SetCommandMsg(
+            self.duty_right, can_addr=CAN_ADDR_R, control_mode=self.control_mode
+        )
         if self.ser:
             self.ser.write(demand_L.as_bytes)
             self.ser.write(demand_R.as_bytes)
