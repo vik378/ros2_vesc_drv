@@ -70,6 +70,13 @@ ros2 launch ros2_vesc_drv joy_teleop.launch.py
 
 The node supports dynamic parameter re-definition. The following parameters are supported:
 
-| Parameter   | Description                                             | Type   | Default Value  |
-| ----------- | ------------------------------------------------------- | ------ | -------------- |
-| serial_port | path to the serial port that VESC master is attached to | String | "/dev/ttyACM0" |
+| Parameter    | Description                                                       | Type   | Default Value  |
+| ------------ | ----------------------------------------------------------------- | ------ | -------------- |
+| serial_port  | path to the serial port that VESC master is attached to           | String | `/dev/ttyACM0` |
+| control_mode | selects control mode; may be set to `duty`, `speed` or `position` | String | `duty`         |
+
+to change a parameter dynamically you may use rqt or terminal like so:
+
+```bash
+ros2 param set /vesc_diff_drv control_mode "position"
+```
