@@ -35,6 +35,8 @@ TOPIC_RIGHT: Final = "/vesc_R/duty"  # Float32
 DEFAULT_SERIAL_ADDR: Final = "/dev/ttyACM0"
 SERIAL_BAUDRATE: Final = 115200
 SERIAL_TIMEOUT: Final = 1  # second
+CONTROL_MODES: Final = frozenset(["duty", "speed", "position"])
+DEFAULT_CONTROL_MODE: Final = "duty"
 
 
 COMM_SET_DUTY: Final = b"\x06"
@@ -62,8 +64,11 @@ class VESCDiffDriver(Node):
         super().__init__(NODE_NAME)
         self.duty_left = 0.0
         self.duty_right = 0.0
+        self.ser = None
         self.declare_parameter("serial_port", DEFAULT_SERIAL_ADDR)
-        self.serial_port = self.get_parameter("serial_port").value
+        self.declare_parameter("control_mode", DEFAULT_CONTROL_MODE)
+        self.bind_serial_port(self.get_parameter("serial_port").value)
+        self.set_control_mode(self.get_parameter("control_mode").value)
         self.last_stamp_R = self.get_clock().now()
         self.last_stamp_L = self.get_clock().now()
         self.subs_duty_left = self.create_subscription(
@@ -75,32 +80,35 @@ class VESCDiffDriver(Node):
         self.tmr = self.create_timer(0.025, self.update_vesc_demands)
         self.subs_duty_left
         self.subs_duty_right
-        self.ser = None
-        self.bind_serial()
         self.add_on_set_parameters_callback(self.handle_parameters_change)
 
     def handle_parameters_change(self, params):
         for param in params:
             if param.name == "serial_port":
-                self.serial_port = param.value
-                self.bind_serial()
+                self.bind_serial_port(param.value)
+            if param.name == "control_mode":
+                self.set_control_mode(param.value)
         return SetParametersResult(successful=True)
 
-    def bind_serial(self):
-        if not self.serial_port:
-            raise AttributeError("Serial port is not defined, nothing to do")
+    def set_control_mode(self, control_mode: str):
+        if control_mode not in CONTROL_MODES:
+            self.get_logger().warn(
+                f"Requested control mode is not supported, pick from {CONTROL_MODES}"
+            )
+
+    def bind_serial_port(self, path_to_port: str):
         if hasattr(self, "ser") and isinstance(self.ser, serial.Serial):
             self.ser.close()
-        self.get_logger().info(f"Attaching VESC driver to {self.serial_port}")
+        self.get_logger().info(f"Attaching VESC driver to {path_to_port}")
         try:
             self.ser = serial.Serial(
-                self.serial_port, SERIAL_BAUDRATE, timeout=SERIAL_TIMEOUT
+                path_to_port, SERIAL_BAUDRATE, timeout=SERIAL_TIMEOUT
             )
         except Exception as e:
             self.get_logger().warning(f"failed to open port: {e}")
             self.ser = None
         else:
-            self.get_logger().warning(f"Successfully attached to {self.serial_port}")
+            self.get_logger().info(f"Successfully attached to {path_to_port}")
 
     def check_last_update(self):
         """Checks if there is a recent message from demands publisher and if there was
