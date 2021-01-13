@@ -65,3 +65,11 @@ You may feed it with some /cmd_vel with Message Publisher (rqt) or joystick from
 # below thing will turn joystic inputs into a /cmd_vel topic / messages
 ros2 launch ros2_vesc_drv joy_teleop.launch.py
 ```
+
+## Parameters of "vesc_diff_srv" Node
+
+The node supports dynamic parameter re-definition. The following parameters are supported:
+
+| Parameter   | Description                                             | Type   | Default Value  |
+| ----------- | ------------------------------------------------------- | ------ | -------------- |
+| serial_port | path to the serial port that VESC master is attached to | String | "/dev/ttyACM0" |
