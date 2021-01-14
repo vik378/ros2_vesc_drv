@@ -35,34 +35,34 @@ TOPIC_RIGHT: Final = "/vesc_R/duty"  # Float32
 DEFAULT_SERIAL_ADDR: Final = "/dev/ttyACM0"
 SERIAL_BAUDRATE: Final = 115200
 SERIAL_TIMEOUT: Final = 1  # second
-CONTROL_MODES: Final = frozenset(["duty", "speed", "position"])
+CONTROL_MODES: Final = frozenset(["duty", "rpm", "current"])
 DEFAULT_CONTROL_MODE: Final = "duty"
 
 
-COMM_SET_DUTY: Final = b"\x06"  # expects an int32 of float * 10e3
-COMM_SET_SPEED: Final = b"\x09"  # expects an int32 of float, RPM
-COMM_SET_POS: Final = b"\x0a"  # expects an int32 of float * 1e6
+COMM_SET_DUTY: Final = b"\x05"  # expects an int32 of float * 1e5
+COMM_SET_RPM: Final = b"\x08"  # expects an int32 of float, RPM
+COMM_SET_CURRENT: Final = b"\x06"  # expects an int32 of float * 1e3
 COMM_FORWARD_CAN: Final = b"\x22"
 
 
 class SetCommandMsg:
-    def __init__(self, val: float, can_addr: int = -1, control_mode="duty"):
+    def __init__(self, val: float, can_addr: int = -1, control_mode: str = "duty"):
         self.val = val
         self.can_addr = can_addr
         self.control_mode = str(control_mode)
 
     @property
-    def payload_cmd(self):
+    def payload_cmd(self) -> bytes:
         cmd, value = None, None
         if self.control_mode == "duty":
             cmd = COMM_SET_DUTY
-            value = int(self.val * 10000)
-        elif self.control_mode == "speed":
-            cmd = COMM_SET_SPEED
+            value = int(self.val * 1e5)
+        elif self.control_mode == "rpm":
+            cmd = COMM_SET_RPM
             value = int(self.val)  # rpm, may need a scaler / multiplier for that
-        elif self.control_mode == "position":
-            cmd = COMM_SET_POS
-            value = int(self.val * 1000000)
+        elif self.control_mode == "current":
+            cmd = COMM_SET_CURRENT
+            value = int(self.val * 1e3)
         else:
             raise NotImplementedError(
                 f"Unimplemented control mode: {self.control_mode}"
@@ -70,7 +70,7 @@ class SetCommandMsg:
         return cmd + struct.pack(">i", value)
 
     @property
-    def can_fwd_cmd(self):
+    def can_fwd_cmd(self) -> bytes:
         if self.can_addr > -1:
             if self.can_addr > 127:
                 raise ValueError("CAN ID > 127 is not supported at the moment")
@@ -78,7 +78,7 @@ class SetCommandMsg:
         return b""
 
     @property
-    def as_bytes(self):
+    def as_bytes(self) -> bytes:
         payload = self.can_fwd_cmd + self.payload_cmd
         crc = binascii.crc_hqx(payload, 0).to_bytes(2, "big")
         return b"\x02" + len(payload).to_bytes(1, "big") + payload + crc + b"\x03"
@@ -160,15 +160,18 @@ class VESCDiffDriver(Node):
 
     def update_vesc_demands(self):
         self.check_last_update()
-        demand_L = SetCommandMsg(
-            self.duty_left, can_addr=CAN_ADDR_L, control_mode=self.control_mode
-        )
-        demand_R = SetCommandMsg(
-            self.duty_right, can_addr=CAN_ADDR_R, control_mode=self.control_mode
-        )
-        if self.ser:
-            self.ser.write(demand_L.as_bytes)
-            self.ser.write(demand_R.as_bytes)
+        try:
+            demand_L = SetCommandMsg(
+                self.duty_left, can_addr=CAN_ADDR_L, control_mode=self.control_mode
+            )
+            demand_R = SetCommandMsg(
+                self.duty_right, can_addr=CAN_ADDR_R, control_mode=self.control_mode
+            )
+            if self.ser:
+                self.ser.write(demand_L.as_bytes)
+                self.ser.write(demand_R.as_bytes)
+        except Exception as e:
+            self.get_logger().error(f"Failed to control VESC: {e}")
 
     def __del__(self):
         if hasattr(self, "ser") and isinstance(self.ser, serial.Serial):
