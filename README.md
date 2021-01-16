@@ -6,6 +6,10 @@ A basic python driver for VESC-based differential drive system that runs on ROS2
 
 I made this tiny script for my robotic platform. The existing VESC drivers at the moment either don't support ROS2 or dont implement CAN chaining (pass command through to a CAN device). In my HW config I have 2x VESC devices connected via CAN. One of those acts as a master and connects to the host via serial (USB-serial).
 
+The image below describes the physical context that this package is developed for.
+
+![Physical Context of this package](docs/phy_context.svg)
+
 ## 2. Installation
 
 You may deploy this package either natively or as a docker container,
