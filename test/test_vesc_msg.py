@@ -1,4 +1,4 @@
-from ros2_vesc_drv.vesc_msg import MessageFactory
+from ros2_vesc_drv.vesc_msg import MessageFactory, PACK_LEN_MAX
 
 MSG_SHALL_NOT_PASS = [
     b"0",  # no start byte
@@ -21,6 +21,7 @@ def test_raw_packet_handling():
                 b"\x02\x01012\x03\x02\x01012\x03",  # bad CRC
                 b"\2\1\36\363\377\3",  # one good msg
                 b"\2\1\36\363\377\3\2\1\36\363\377\3",  # 2 good msgs in one buff
+                b"0" * PACK_LEN_MAX * 4,  # how about buffer longer than max allowed?
             ],
         )
     )

@@ -2,9 +2,9 @@ from typing import Callable, Final
 import struct
 import binascii
 
-PACKET_LEN_MAX: Final = 255  # maximum size (expectation limit) of a useful packet
-BUF_LEN_MAX: Final = int(PACKET_LEN_MAX * 3)  # maximum size of the buffer
-BUF_LEN_MIN: Final = 6
+PAYLOAD_LEN_MAX: Final = 255  # maximum size (expectation limit) of a useful packet
+PACK_LEN_MAX: Final = int(PAYLOAD_LEN_MAX * 3)  # maximum size of the buffered packet
+BUF_LEN_MIN: Final = 6  # minimum buffer fill for a valid message + overhead
 START_BYTE: Final = b"\x02"
 END_BYTE: Final = 3
 OVERHEAD_LEN: Final = 4
@@ -29,7 +29,7 @@ class MessageFactory:
         self.buffer: bytes = b""
 
     def handle_packet(self, packet: bytes):
-        self.buffer += packet
+        self.buffer += packet if len(packet) <= PACK_LEN_MAX else packet[:-PACK_LEN_MAX]
         self._evaluate_buffer()
 
     def _evaluate_buffer(self) -> bool:
