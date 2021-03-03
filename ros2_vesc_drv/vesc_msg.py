@@ -46,7 +46,8 @@ class MessageFactory:
         if self.buffer[msg_len + OVERHEAD_LEN] != END_BYTE:
             self.buffer = self.buffer[1:]
             # not a message, start over from the next start byte
-            self._evaluate_buffer()
+            while self._evaluate_buffer():
+                pass
             return True
         payload = self.buffer[OFFSET_PAYLOAD_START : OFFSET_PAYLOAD_START + msg_len]
         msg_end = msg_len + OVERHEAD_LEN
@@ -55,8 +56,12 @@ class MessageFactory:
         if crc_should == crc_is:
             self.handle_message(payload)
             self.buffer = self.buffer[1:]
+            while self._evaluate_buffer():
+                pass
+            return True
         else:
             # not a valid message, start over from the next start byte
             self.buffer = self.buffer[1:]
-            self._evaluate_buffer()
+            while self._evaluate_buffer():
+                pass
             return True
