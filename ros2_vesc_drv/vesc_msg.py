@@ -1,6 +1,7 @@
-from typing import Callable, Final
-import struct
 import binascii
+import struct
+from dataclasses import dataclass, make_dataclass
+from typing import Callable, Final, List
 
 PAYLOAD_LEN_MAX: Final = 255  # maximum size (expectation limit) of a useful packet
 PACK_LEN_MAX: Final = int(PAYLOAD_LEN_MAX * 3)  # maximum size of the buffered packet
@@ -10,6 +11,59 @@ END_BYTE: Final = 3
 OVERHEAD_LEN: Final = 4
 OFFSET_MSGLEN: Final = 1
 OFFSET_PAYLOAD_START: Final = 2
+
+
+@dataclass
+class VescAttribute:
+    name: str
+    ctype: str
+    divider: int = 1
+
+
+class VescMessageFactory:
+    def __init__(self, cls_name, attr_def: List[VescAttribute]):
+        self._attrs = attr_def
+        self._decode_str = "!" + "".join(map(lambda x: x.ctype, self._attrs))
+        self._pcls = make_dataclass(cls_name, list(map(lambda x: x.name, self._attrs)))
+        self._dividers = list(map(lambda x: x.divider, self._attrs))
+
+    @staticmethod
+    def _prep_value(vpkg: List[int]):
+        raw_val, divider = vpkg
+        return raw_val if divider < 2 else raw_val / divider
+
+    def decode(self, payload):
+        raw = struct.unpack(self._decode_str, payload)
+        vals = list(map(self._prep_value, zip(raw, self._dividers)))
+        return self._pcls(*vals)
+
+
+GET_PARAMS_DECODER = VescMessageFactory(
+    "GetParamsMsg",
+    [
+        VescAttribute(name="command", ctype="B"),
+        VescAttribute(name="temp_fet", ctype="h", divider=10),
+        VescAttribute(name="temp_motor", ctype="h", divider=10),
+        VescAttribute(name="motor_current", ctype="i", divider=100),
+        VescAttribute(name="input_current", ctype="i", divider=100),
+        VescAttribute(name="avg_id", ctype="i", divider=100),
+        VescAttribute(name="avg_iq", ctype="i", divider=100),
+        VescAttribute(name="duty_cycle_now", ctype="h", divider=1000),
+        VescAttribute(name="rpm", ctype="i"),
+        VescAttribute(name="v_in", ctype="h", divider=10),
+        VescAttribute(name="amp_hours", ctype="i", divider=10000),
+        VescAttribute(name="amp_hours_charged", ctype="i", divider=10000),
+        VescAttribute(name="watt_hours", ctype="i", divider=10000),
+        VescAttribute(name="watt_hours_charged", ctype="i", divider=10000),
+        VescAttribute(name="tachometer", ctype="i"),
+        VescAttribute(name="tachometer_abs", ctype="i"),
+        VescAttribute(name="mc_fault_code", ctype="B"),
+        VescAttribute(name="pid_pos_now", ctype="i", divider=1000000),
+        VescAttribute(name="app_controller_id", ctype="B"),
+        VescAttribute(name="time_ms", ctype="i"),
+        VescAttribute(name="_tail", ctype="10B"),
+    ],
+)
 
 
 class MessageFactory:
