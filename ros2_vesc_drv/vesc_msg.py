@@ -1,6 +1,6 @@
 import binascii
 import struct
-from dataclasses import dataclass, make_dataclass
+from dataclasses import dataclass, make_dataclass, asdict
 from typing import Callable, Final, List
 
 PAYLOAD_LEN_MAX: Final = 255  # maximum size (expectation limit) of a useful packet
@@ -24,7 +24,11 @@ class VescMessageFactory:
     def __init__(self, cls_name, attr_def: List[VescAttribute]):
         self._attrs = attr_def
         self._decode_str = "!" + "".join(map(lambda x: x.ctype, self._attrs))
-        self._pcls = make_dataclass(cls_name, list(map(lambda x: x.name, self._attrs)))
+        self._pcls = make_dataclass(
+            cls_name,
+            list(map(lambda x: x.name, self._attrs)),
+            namespace={"asdict": asdict},
+        )
         self._dividers = list(map(lambda x: x.divider, self._attrs))
 
     @staticmethod
@@ -38,17 +42,18 @@ class VescMessageFactory:
         return self._pcls(*vals)
 
 
-GET_PARAMS_DECODER = VescMessageFactory(
-    "GetParamsMsg",
+# the below sequence is constructed following commands.cpp#L157 of vesc_tool
+MC_VALS_DECODER = VescMessageFactory(
+    "MCValuesMsg",
     [
         VescAttribute(name="command", ctype="B"),
-        VescAttribute(name="temp_fet", ctype="h", divider=10),
+        VescAttribute(name="temp_mos", ctype="h", divider=10),
         VescAttribute(name="temp_motor", ctype="h", divider=10),
-        VescAttribute(name="motor_current", ctype="i", divider=100),
-        VescAttribute(name="input_current", ctype="i", divider=100),
-        VescAttribute(name="avg_id", ctype="i", divider=100),
-        VescAttribute(name="avg_iq", ctype="i", divider=100),
-        VescAttribute(name="duty_cycle_now", ctype="h", divider=1000),
+        VescAttribute(name="current_motor", ctype="i", divider=100),
+        VescAttribute(name="current_in", ctype="i", divider=100),
+        VescAttribute(name="id", ctype="i", divider=100),
+        VescAttribute(name="iq", ctype="i", divider=100),
+        VescAttribute(name="duty_now", ctype="h", divider=1000),
         VescAttribute(name="rpm", ctype="i"),
         VescAttribute(name="v_in", ctype="h", divider=10),
         VescAttribute(name="amp_hours", ctype="i", divider=10000),
@@ -57,18 +62,22 @@ GET_PARAMS_DECODER = VescMessageFactory(
         VescAttribute(name="watt_hours_charged", ctype="i", divider=10000),
         VescAttribute(name="tachometer", ctype="i"),
         VescAttribute(name="tachometer_abs", ctype="i"),
-        VescAttribute(name="mc_fault_code", ctype="B"),
-        VescAttribute(name="pid_pos_now", ctype="i", divider=1000000),
-        VescAttribute(name="app_controller_id", ctype="B"),
-        VescAttribute(name="time_ms", ctype="i"),
-        VescAttribute(name="_tail", ctype="10B"),
+        VescAttribute(name="fault_code", ctype="B"),
+        VescAttribute(name="position", ctype="i", divider=1000000),
+        VescAttribute(name="vesc_id", ctype="B"),
+        VescAttribute(name="temp_mos_1", ctype="h", divider=10),
+        VescAttribute(name="temp_mos_2", ctype="h", divider=10),
+        VescAttribute(name="temp_mos_3", ctype="h", divider=10),
+        VescAttribute(name="vd", ctype="i", divider=100),
+        VescAttribute(name="vq", ctype="i", divider=100),
     ],
 )
 
 
-class MessageFactory:
+class MessageUnpacker:
     """
-    Given serial packets produces valid VESC messages.
+    Given serial packets performs buffering and produces VESC payloads when a
+    valid VESC message is buffered.
     A valid VESC message is expected to have the following structure:
 
     * START_BYTE (x02),

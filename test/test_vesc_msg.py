@@ -1,4 +1,4 @@
-from ros2_vesc_drv.vesc_msg import MessageFactory, PACK_LEN_MAX
+from ros2_vesc_drv.vesc_msg import MessageUnpacker, PACK_LEN_MAX
 
 MSG_SHALL_NOT_PASS = [
     b"0",  # no start byte
@@ -8,7 +8,7 @@ MSG_SHALL_NOT_PASS = [
 
 def test_raw_packet_handling():
     messages = []
-    msg_factory = MessageFactory(messages.append)
+    msg_factory = MessageUnpacker(messages.append)
     list(
         map(
             msg_factory.handle_packet,
