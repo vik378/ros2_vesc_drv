@@ -5,7 +5,7 @@
   <version>0.0.1</version>
   <description>Provides basic ROS2 implementation of VESC driver. Designed for differential drive application - expects 2 controllers to be available with one chained to another over CAN. The VESC master is controled via serial (USB).</description>
   <maintainer email="viktor@vik.works">Viktor Kravchenko</maintainer>
-  <license>Apache License 2.0</license>
+  <license>Apache License, Version 2.0</license>
 
   <depend>rclpy</depend>
 

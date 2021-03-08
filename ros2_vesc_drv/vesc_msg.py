@@ -1,3 +1,17 @@
+# Copyright 2021 Viktor Kravchenko (viktor@vik.works)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import binascii
 import struct
 from dataclasses import dataclass, make_dataclass, asdict
@@ -24,7 +38,7 @@ class VescMessageFactory:
     def __init__(self, cls_name, attr_def: List[VescAttribute]):
         self._attrs = attr_def
         self._decode_str = "!" + "".join(map(lambda x: x.ctype, self._attrs))
-        self._pcls = make_dataclass(
+        self.blueprint = make_dataclass(
             cls_name,
             list(map(lambda x: x.name, self._attrs)),
             namespace={"asdict": asdict},
@@ -39,7 +53,7 @@ class VescMessageFactory:
     def decode(self, payload):
         raw = struct.unpack(self._decode_str, payload)
         vals = list(map(self._prep_value, zip(raw, self._dividers)))
-        return self._pcls(*vals)
+        return self.blueprint(*vals)
 
 
 # the below sequence is constructed following commands.cpp#L157 of vesc_tool
@@ -76,8 +90,8 @@ MC_VALS_DECODER = VescMessageFactory(
 
 class MessageUnpacker:
     """
-    Given serial packets performs buffering and produces VESC payloads when a
-    valid VESC message is buffered.
+    Given serial packets produces valid VESC payloads (when found).
+
     A valid VESC message is expected to have the following structure:
 
     * START_BYTE (x02),

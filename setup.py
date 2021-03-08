@@ -16,10 +16,10 @@ setup(
     ],
     install_requires=["setuptools"],
     zip_safe=True,
-    maintainer="Vktork378",
+    maintainer="Viktor Kravchenko",
     maintainer_email="viktor@vik.works",
     description="Provides basic VESC driver for differential drive app (2 VESCs)",
-    license="Apache License 2.0",
+    license="Apache License, Version 2.0",
     tests_require=["pytest"],
     entry_points={
         "console_scripts": [
