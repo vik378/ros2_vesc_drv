@@ -103,8 +103,13 @@ class VESCDiffDriver(Node):
             self.get_logger().warning(f"Successfully attached to {self.serial_port}")
 
     def check_last_update(self):
-        """Checks if there is a recent message from demands publisher and if there was
-        no recent demand update recets demands to zero."""
+        """
+        Reset demands to 0 if no update has arrived before a deadline.
+
+        Rationale: in case of upper level component failure (to produce a command
+        before a deadline) this will protect the system from uncontrolled rotation
+        of the managed motor.
+        """
         now = self.get_clock().now()
         diff_L = (now - self.last_stamp_L).nanoseconds * 1e-9
         diff_R = (now - self.last_stamp_R).nanoseconds * 1e-9

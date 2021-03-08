@@ -27,8 +27,11 @@ TOPIC_VESC_RIGHT: Final = "/vesc_R/duty"
 
 
 def diamond_steer(x: float, y: float) -> Tuple[float, float]:
-    """Implements diamond steering
-    (as per https://electronics.stackexchange.com/a/293108)"""
+    """
+    Convert steering commands x and y into differential drive commands.
+
+    Implementation follows https://electronics.stackexchange.com/a/293108
+    """
     # convert to polar
     r = math.hypot(x, y)
     t = math.atan2(y, x)

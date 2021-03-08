@@ -4,7 +4,7 @@ A basic python driver for VESC-based differential drive system that runs on ROS2
 
 ## Introduction
 
-I made this tiny script for my robotic platform. The existing VESC drivers at the moment either don't support ROS2 or dont implement CAN chaining (pass command through to a CAN device). In my HW config I have 2x VESC devices connected via CAN. One of those acts as a master and connects to the host via serial (USB-serial).
+I made this tiny script for my robotic platform. The existing VESC drivers at the moment either don't support ROS2 or don't implement CAN chaining (pass command through to a CAN device). In my HW config I have 2x VESC devices connected via CAN. One of those acts as a master and connects to the host via serial (USB-serial).
 
 ## Install (native mode)
 
@@ -62,7 +62,7 @@ docker run -it --net=host --pid=host --device=/dev/ttyACM0 ros2_vesc_drv:latest 
 You may feed it with some /cmd_vel with Message Publisher (rqt) or joystick from your host PC, there is a launch file for that too :-)
 
 ```bash
-# below thing will turn joystic inputs into a /cmd_vel topic / messages
+# below thing will turn joystick inputs into a /cmd_vel topic / messages
 ros2 launch ros2_vesc_drv joy_teleop.launch.py
 ```
 
